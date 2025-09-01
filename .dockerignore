@@ -1,0 +1,13 @@
+# לא להכניס את הדברים האלה לתוך Docker
+__pycache__/
+.venv/
+.idea/
+.git/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+.DS_Store
+*.log
+scripts/

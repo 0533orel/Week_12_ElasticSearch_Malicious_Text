@@ -1,7 +1,7 @@
-from config import Config
-from es_client import ESClient
-from loader import Loader
-from processing import Processing
+from .config import Config
+from .es_client import ESClient
+from .loader import Loader
+from .processing import Processing
 from elasticsearch import helpers
 
 MAPPING = {
@@ -46,7 +46,7 @@ class Manager:
 
     def load_csv(self):
         df = self.loader.load_df()
-        self.es.bulk_index(self.loader.generate_actions(df))
+        self.es.bulk_index(self.loader.iter_bulk(df))
         self.es.refresh(self.cfg.index_name)
 
     def add_sentiment(self):

@@ -36,7 +36,6 @@ class ApiServer:
 
         @app.get("/clean-data")
         def clean_data(request: Request):
-            # פרמטר אופציונלי להגבלת כמות (use ?limit=1000). 0 או None = הכל
             limit_raw = request.query_params.get("limit")
             try:
                 limit = int(limit_raw) if limit_raw is not None else 0

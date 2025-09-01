@@ -8,11 +8,26 @@ class Loader:
     def load_df(self):
         df = pd.read_csv(self.csv_path)
         df["TweetID"] = df["TweetID"].astype("Int64").astype(str)
-        df["CreateDate"] = pd.to_datetime(df["CreateDate"]).dt.strftime("%Y-%m-%dT%H:%M:%S%z")
-        df["text"] = df["text"].fillna("")
+        raw = df["CreateDate"]
+        try:
+            dt = pd.to_datetime(raw, utc=True, format="mixed", errors="coerce")
+        except TypeError:
+            dt = pd.to_datetime(raw, utc=True, errors="coerce")
+
+        ok = ~dt.isna()
+        df = df.loc[ok].copy()
+        dt = dt.loc[ok]
+
+        df["CreateDate"] = dt.dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        if "text" in df.columns:
+            df["text"] = df["text"].fillna("").astype(str)
+        else:
+            df["text"] = ""
+
         return df
 
-    def generate_actions(self, df):
+    def iter_bulk(self, df):
         for r in df.itertuples():
             yield {
               "_index": self.index,
