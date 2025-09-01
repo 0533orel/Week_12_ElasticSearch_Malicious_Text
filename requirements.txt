@@ -1,1 +1,6 @@
 elasticsearch==8.15.0
+fastapi>=0.110
+hypercorn>=0.16
+pandas>=2.0
+nltk>=3.8.1
+
