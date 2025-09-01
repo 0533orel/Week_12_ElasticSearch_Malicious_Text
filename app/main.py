@@ -2,6 +2,7 @@ from .manager import Manager
 from .api_server import ApiServer
 
 def init_data(mgr):
+    """Optionally (INIT_DATA) bootstrap/load/enrich/cleanup the dataset on startup."""
     if not mgr.cfg.init_data:
         return
 
@@ -23,6 +24,7 @@ def init_data(mgr):
     mgr.cleanup()
 
 def create_app():
+    """Create Manager, initialize data (if enabled), build and return the FastAPI app."""
     mgr = Manager()
     init_data(mgr)
     api = ApiServer(mgr)

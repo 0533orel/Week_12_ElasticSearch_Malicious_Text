@@ -1,11 +1,15 @@
 import pandas as pd
 
 class Loader:
+    """Loads the CSV and prepares rows for Elasticsearch indexing."""
+
     def __init__(self, csv_path, index):
+        """Keep CSV file path and target index name."""
         self.csv_path = csv_path
         self.index = index
 
     def load_df(self):
+        """Read CSV, normalize ids, parse dates, and ensure a 'text' column."""
         df = pd.read_csv(self.csv_path)
         df["TweetID"] = df["TweetID"].astype("Int64").astype(str)
         raw = df["CreateDate"]
@@ -28,6 +32,7 @@ class Loader:
         return df
 
     def iter_bulk(self, df):
+        """Yield bulk actions (index docs) for each row in the dataframe."""
         for r in df.itertuples():
             yield {
               "_index": self.index,
