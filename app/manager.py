@@ -33,33 +33,42 @@ MAPPING = {
 }
 
 class Manager:
+    """Coordinates config, Elasticsearch, loading, processing, and API queries."""
+
     def __init__(self, config=None):
+        """Wire Config, ES client, Loader, and Processing helpers."""
         self.cfg = config or Config()
         self.es = ESClient(self.cfg.es_url)
         self.loader = Loader(self.cfg.csv_path, self.cfg.index_name)
         self.proc = Processing(self.es, self.cfg.index_name)
 
     def bootstrap(self):
+        """Re-create the index with mapping if needed (or when forced)."""
         if self.es.index_exists(self.cfg.index_name):
             self.es.drop_index(self.cfg.index_name)
         self.es.create_index(self.cfg.index_name, MAPPING)
 
     def load_csv(self):
+        """Load the CSV into ES using bulk indexing."""
         df = self.loader.load_df()
         self.es.bulk_index(self.loader.iter_bulk(df))
         self.es.refresh(self.cfg.index_name)
 
     def add_sentiment(self):
+        """Compute sentiment for each document and store labels/scores."""
         self.proc.add_sentiment()
 
     def tag_weapons(self):
+        """Detect and tag weapon mentions; set 'weapons' and 'weapon_count'."""
         weapons = self._read_weapon_list(self.cfg.weapon_list_path)
         self.proc.tag_weapons(weapons)
 
     def cleanup(self):
+        """Delete non-interesting docs (non-antisemitic AND neutral/positive AND no weapons)."""
         self.proc.prune_uninteresting()
 
     def status(self):
+        """Return processing completion flags and counts."""
         missing_sent = self.es.count(self.cfg.index_name, {"bool": {"must_not": [ {"exists": {"field": "sentiment"}} ]}})
         missing_weps = self.es.count(self.cfg.index_name, {"bool": {"must_not": [ {"exists": {"field": "weapon_count"}} ]}})
         total = self.es.count(self.cfg.index_name)
@@ -70,6 +79,7 @@ class Manager:
         }
 
     def query_antisemitic_with_weapons(self, size=200):
+        """Return antisemitic docs that mention ≥1 weapon."""
         body = {
           "query": {
             "bool": {
@@ -86,6 +96,7 @@ class Manager:
         return [h["_source"] for h in res.get("hits", {}).get("hits", [])]
 
     def query_two_or_more_weapons(self, size=200):
+        """Return docs that mention ≥2 different weapons."""
         body = {
           "query": {"range": {"weapon_count": {"gte": 2}}},
           "_source": ["tweet_id","created_at","text","antisemitic","sentiment","sentiment_score","weapons","weapon_count"],
@@ -95,10 +106,12 @@ class Manager:
         return [h["_source"] for h in res.get("hits", {}).get("hits", [])]
 
     def _read_weapon_list(self, path):
+        """Read weapon keywords from a plain text file (one per line)."""
         with open(path, "r", encoding="utf-8") as f:
             return [line.strip() for line in f if line.strip()]
 
     def get_all_clean(self, limit=0):
+        """Return kept/clean documents after cleanup (optionally limited)."""
         docs = []
         for hit in helpers.scan(self.es.client, index=self.cfg.index_name, query={"query": {"match_all": {}}}):
             docs.append(hit["_source"])

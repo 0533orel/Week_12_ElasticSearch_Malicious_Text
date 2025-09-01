@@ -1,7 +1,10 @@
 import os
 
 class Config:
+    """Holds runtime configuration (ES URL, index name, local paths)."""
+
     def __init__(self):
+        """Initialize config values; can be overridden via environment variables."""
         self.es_url = os.environ.get("ES_URL", "http://localhost:9200")
         self.index_name = os.environ.get("INDEX_NAME", "malicious_text")
         self.csv_path = os.environ.get("CSV_PATH", "data/tweets.csv")

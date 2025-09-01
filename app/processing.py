@@ -10,11 +10,15 @@ except LookupError:
 
 
 class Processing:
+    """Implements enrichment and cleanup steps executed via Elasticsearch."""
+
     def __init__(self, es, index):
+        """Keep ES client wrapper and target index name."""
         self.es = es
         self.index = index
 
     def add_sentiment(self, batch_size=500):
+        """Compute VADER sentiment (compound) and label each doc."""
         sia = SentimentIntensityAnalyzer()
 
         query = {"query": {"bool": {"must_not": [{"exists": {"field": "sentiment"}}]}}}
@@ -61,6 +65,7 @@ class Processing:
         return {"updated": updated}
 
     def tag_weapons(self, weapons):
+        """Mark weapons found in text and compute weapon_count via painless."""
         weapons_list = [w.strip().lower() for w in weapons if w.strip()]
         body = {
           "script": {
@@ -81,6 +86,7 @@ class Processing:
         return self.es.update_by_query(self.index, body)
 
     def prune_uninteresting(self):
+        """Delete docs that are non-antisemitic, neutral/positive, and weaponless."""
         body = {
           "query": {
             "bool": {
