@@ -2,6 +2,7 @@ from config import Config
 from es_client import ESClient
 from loader import Loader
 from processing import Processing
+from elasticsearch import helpers
 
 MAPPING = {
   "settings": {
@@ -96,3 +97,11 @@ class Manager:
     def _read_weapon_list(self, path):
         with open(path, "r", encoding="utf-8") as f:
             return [line.strip() for line in f if line.strip()]
+
+    def get_all_clean(self, limit=0):
+        docs = []
+        for hit in helpers.scan(self.es.client, index=self.cfg.index_name, query={"query": {"match_all": {}}}):
+            docs.append(hit["_source"])
+            if limit and len(docs) >= limit:
+                break
+        return docs
